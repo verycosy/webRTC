@@ -1,0 +1,21 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "webRTC from scratch",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon ."
+  },
+  "keywords": [
+    "webRTC"
+  ],
+  "author": "verycosy",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^2.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
+  }
+}
