@@ -8,6 +8,55 @@
     <title>Document</title>
   </head>
   <body>
+    <video id="localVideo" autoplay controls></video>
+    <video id="remoteVideo" autoplay controls></video>
+
+    <select id="resolutionList">
+      <option value="default">Default Resolution</option>
+      <option value="qvga">QVGA(320x240)</option>
+      <option value="vga">VGA(640x480)</option>
+      <option value="hd">HD(1280x720)</option>
+      <option value="fullHD">FULL HD(1920x1080)</option>
+      <option value=="fourK">4K(4096x2160)</option>
+    </select>
+    <button id="offer">offer</button>
+    <button id="answer">answer</button>
+
+    <h3>Enumerate Device List</h3>
+    <h4>KIND | LABEL | GROUP ID | DEVICE ID</h4>
+    <h5>
+      LABEL : For security reasons, the label field is always blank unless an
+      active media stream exists or the user has granted persistent permission
+      for media device access. The set of device labels could otherwise be used
+      as part of a fingerprinting mechanism to identify a user.
+    </h5>
+    <h5>
+      GROUP ID : Two devices have the same group identifier if they belong to
+      the same physical device
+    </h5>
+
+    <h5>
+      DEVICE ID : an identifier for the represented device that is persisted
+      across sessions. It is un-guessable by other applications and unique to
+      the origin of the calling application. It is reset when the user clears
+      cookies (for Private Browsing, a different identifier is used that is not
+      persisted across sessions).
+    </h5>
+    <ul id="enumerateDeviceList"></ul>
+
+    <h3>Media Constraint List</h3>
+    <ul id="mediaConstraintList"></ul>
+
+    <div>
+      <div id="audioStreamInfo"></div>
+      <div id="currentAudioStream"></div>
+
+      <h5>Video Stream Info</h5>
+      <div id="videoStreamInfo"></div>
+      <h5>Current Video Stream</h5>
+      <div id="currentVideoStream"></div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="./script.js"></script>
   </body>
