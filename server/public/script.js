@@ -10,13 +10,18 @@ const enumerateDeviceList = document.getElementById("enumerateDeviceList");
 const offerButton = document.getElementById("offer");
 const answerButton = document.getElementById("answer");
 
+const userPlatform = document.getElementById("userPlatform");
 const videoStreamInfo = document.getElementById("videoStreamInfo");
 const currentVideoStream = document.getElementById("currentVideoStream");
+const audioStreamInfo = document.getElementById("audioStreamInfo");
+const currentAudioStream = document.getElementById("currentAudioStream");
+
+let pc = null,
+  localStream = null;
 
 const mediaStreamConstraints = {
   default: {
-    video: true,
-    audio: true
+    video: true
   },
   qvga: {
     video: { width: { exact: 320 }, height: { exact: 240 } }
@@ -40,6 +45,10 @@ function addItem(ul, item) {
   li.textContent = item;
 
   ul.appendChild(li);
+}
+
+function showUserPlatform() {
+  addItem(userPlatform, navigator.platform);
 }
 
 function showSupportedConstraints() {
@@ -68,54 +77,47 @@ function showEnumerateDeivces() {
   );
 }
 
+function showObject(element, obj) {
+  Object.keys(obj).forEach(key => {
+    let string = null;
+
+    if (typeof obj[key] === "object")
+      string = `${key} : ${JSON.stringify(obj[key])}\n`;
+    else string = `${key} : ${obj[key]}\n`;
+
+    addItem(element, string);
+  });
+}
+
 function getMedia() {
-  navigator.mediaDevices
-    .getUserMedia(mediaStreamConstraints[resoultionList.value])
-    .then(
-      stream => {
-        localVideo.srcObject = stream;
-        stream.getTracks().forEach(track => {
-          if (track.kind === "video") {
-            const {
-              width: cwidth,
-              height: cheight,
-              resizeMode: cresizeMode,
-              frameRate: cframeRate,
-              facingMode: cfacingMode,
-              aspectRatio: caspectRatio
-            } = track.getCapabilities();
-
-            const {
-              frameRate,
-              width,
-              height,
-              resizeMode,
-              aspectRatio
-            } = track.getSettings();
-
-            videoStreamInfo.innerText = `${track.label}
-                width : ${cwidth["min"]} ~ ${cwidth["max"]}
-                height : ${cheight["min"]} ~ ${cheight["max"]}
-                resize mode : ${cresizeMode.map(mode => mode)}
-                aspect ratio : ${caspectRatio["min"]} ~ ${caspectRatio["max"]}
-                frame rate : ${cframeRate["min"]} ~ ${cframeRate["max"]}
-                facing mode : ${cfacingMode.map(mode => mode)}`;
-
-            currentVideoStream.innerText = `
-                width : ${width}
-                height : ${height}
-                resize mode : ${resizeMode}
-                aspect ratio : ${aspectRatio}
-                frame rate : ${frameRate}`;
-          }
-        });
-      },
-      err => alert(err.name + " : " + err.message)
-    );
+  if (resoultionList.value === "desktop") {
+    navigator.mediaDevices.getDisplayMedia().then(stream => {
+      localVideo.srcObject = stream;
+    });
+  } else {
+    navigator.mediaDevices
+      .getUserMedia(mediaStreamConstraints[resoultionList.value])
+      .then(
+        stream => {
+          localVideo.srcObject = stream;
+          stream.getTracks().forEach(track => {
+            if (track.kind === "video") {
+              showObject(videoStreamInfo, track.getCapabilities());
+              showObject(currentVideoStream, track.getSettings());
+            } else {
+              showObject(audioStreamInfo, track.getCapabilities());
+              showObject(currentAudioStream, track.getSettings());
+            }
+          });
+        },
+        err => alert(err.name + " : " + err.message)
+      );
+  }
 }
 
 function init() {
   if (navigator.mediaDevices) {
+    showUserPlatform();
     showEnumerateDeivces();
     showSupportedConstraints();
     getMedia();

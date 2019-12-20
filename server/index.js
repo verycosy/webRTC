@@ -15,6 +15,8 @@ app.get("/", (req, res) => {
 
 const ioHandler = socket => {
   console.log("Someone Connected");
+
+  socket.on("disconnect", () => console.log("Someone Disconnected"));
 };
 
 io.on("connection", ioHandler);

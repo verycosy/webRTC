@@ -17,7 +17,8 @@
       <option value="vga">VGA(640x480)</option>
       <option value="hd">HD(1280x720)</option>
       <option value="fullHD">FULL HD(1920x1080)</option>
-      <option value=="fourK">4K(4096x2160)</option>
+      <option value="fourK">4K(4096x2160)</option>
+      <option value="desktop">Desktop</option>
     </select>
     <button id="offer">offer</button>
     <button id="answer">answer</button>
@@ -48,13 +49,18 @@
     <ul id="mediaConstraintList"></ul>
 
     <div>
-      <div id="audioStreamInfo"></div>
-      <div id="currentAudioStream"></div>
+      <h5>User Platform</h5>
+      <ul id="userPlatform"></ul>
+
+      <h5>Audio Stream Info</h5>
+      <ul id="audioStreamInfo"></ul>
+      <h5>Current Audio Stream</h5>
+      <ul id="currentAudioStream"></ul>
 
       <h5>Video Stream Info</h5>
-      <div id="videoStreamInfo"></div>
+      <ul id="videoStreamInfo"></ul>
       <h5>Current Video Stream</h5>
-      <div id="currentVideoStream"></div>
+      <ul id="currentVideoStream"></ul>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
