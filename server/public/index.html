@@ -8,7 +8,9 @@
     <title>Document</title>
   </head>
   <body>
+    <canvas id="localOutput"></canvas>
     <video id="localVideo" autoplay controls></video>
+    <canvas id="remoteOutput"></canvas>
     <video id="remoteVideo" autoplay controls></video>
 
     <select id="resolutionList">
@@ -20,6 +22,7 @@
       <option value="fourK">4K(4096x2160)</option>
       <option value="desktop">Desktop</option>
     </select>
+
     <button id="offer">offer</button>
     <button id="answer">answer</button>
 
@@ -63,6 +66,8 @@
       <ul id="currentVideoStream"></ul>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="./script.js"></script>
   </body>

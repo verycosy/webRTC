@@ -1,25 +1,5 @@
 const socket = io();
 
-socket.on("offer", async sdpOffer => {
-  console.log(`✅ I got offer`);
-
-  if (!pc) createPeerConnection();
-  pc.setRemoteDescription(sdpOffer);
-  await getMedia();
-  // 순서주의 DOMException: Failed to execute 'addIceCandidate' on 'RTCPeerConnection': Error processing ICE candidate
-  // Why ??? https://stackoverflow.com/questions/13396071/errors-when-ice-candidates-are-received-before-answer-is-sent
-});
-
-socket.on("answer", sdpAnswer => {
-  console.log(`✅ I got answer`);
-  pc.setRemoteDescription(sdpAnswer);
-});
-
-socket.on("icecandidate", icecandidate => {
-  console.log(`✅ I got icecandidate`);
-  pc.addIceCandidate(icecandidate);
-});
-
 //TODO: 연결 위에 pc 객체 상태 바뀌나? / pc나 stream이 없을 경우 예외처리 / pcConfig가 없다면? 결과는?
 
 const localVideo = document.getElementById("localVideo");
@@ -38,6 +18,7 @@ const currentVideoStream = document.getElementById("currentVideoStream");
 const audioStreamInfo = document.getElementById("audioStreamInfo");
 const currentAudioStream = document.getElementById("currentAudioStream");
 
+let net = null;
 let pc = null,
   localStream = null;
 
@@ -118,6 +99,36 @@ function showObject(element, obj) {
   });
 }
 
+async function drawFromVideo(video, ctx) {
+  const { keypoints } = await net.estimateSinglePose(video, 0.5, true, 16);
+
+  ctx.fillStyle = "red";
+  ctx.clearRect(0, 0, video.width, video.height);
+
+  keypoints.forEach(({ part, position: { x, y } }) => {
+    console.log(`${part} drawing at (${x}, ${y})`);
+
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2, true);
+    ctx.fill();
+  });
+}
+
+function tracking(evt) {
+  console.log("Tracking Start");
+  const { target: video } = evt;
+  const canvas = video.previousElementSibling;
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  video.width = video.videoWidth;
+  video.height = video.videoHeight;
+
+  setInterval(() => drawFromVideo(video, ctx), 100);
+}
+
 async function getMedia() {
   let stream = null;
 
@@ -134,8 +145,9 @@ async function getMedia() {
 
     console.log("✅ Add Local Stream Tracks to RTCPeerConnection");
 
-    stream.getTracks().forEach(track => {
-      console.log(pc.addTrack(track, localStream));
+    stream.getTracks().forEach(async track => {
+      const RTCRtpSender = pc.addTrack(track, localStream); // pc.getSenders()
+      console.log(RTCRtpSender);
 
       if (track.kind === "video") {
         showObject(videoStreamInfo, track.getCapabilities());
@@ -152,6 +164,14 @@ async function getMedia() {
 
 function eventHandler(callback) {
   return evt => {
+    const {
+      target: {
+        signalingState,
+        iceGatheringState,
+        iceConnectionState,
+        connectionState
+      }
+    } = evt;
     console.log(`✅ ${evt.type}`, evt);
     if (typeof callback === "function") callback(evt);
   };
@@ -170,7 +190,6 @@ const getStatus = () => {
 const showStatus = result => {
   console.log("===================");
   result.forEach(status => console.log(status));
-  console.log("===================");
 };
 
 function createPeerConnection() {
@@ -179,11 +198,12 @@ function createPeerConnection() {
   console.log("✅ Create RTCPeerConnection");
   console.log(pc);
 
+  getStatus();
+
   pc.addEventListener(
     "connectionstatechange",
     eventHandler(({ currentTarget: { connectionState } }) => {
-      console.log(connectionState);
-      //if (connectionState === "connected") setInterval(getStatus, 1000);
+      if (connectionState === "connected") setInterval(getStatus, 1000);
     })
   );
   pc.addEventListener("datachannel", eventHandler());
@@ -205,8 +225,7 @@ function createPeerConnection() {
   pc.addEventListener(
     "track",
     eventHandler(evt => {
-      console.log(evt.streams); // addTrack에 localstream 안 붙여주면 [] 임
-      remoteVideo.srcObject = evt.streams[0];
+      remoteVideo.srcObject = evt.streams[0]; // addTrack에 localstream 안 붙여주면 [] 임
     })
   );
 }
@@ -239,11 +258,43 @@ async function answer() {
   }
 }
 
-function init() {
+function socketSetting() {
+  socket.on("offer", async sdpOffer => {
+    console.log(`✅ I got offer`);
+
+    if (!pc) createPeerConnection();
+    pc.setRemoteDescription(sdpOffer);
+    await getMedia();
+    // 순서주의 DOMException: Failed to execute 'addIceCandidate' on 'RTCPeerConnection': Error processing ICE candidate
+    // Why ??? https://stackoverflow.com/questions/13396071/errors-when-ice-candidates-are-received-before-answer-is-sent
+  });
+
+  socket.on("answer", sdpAnswer => {
+    console.log(`✅ I got answer`);
+    pc.setRemoteDescription(sdpAnswer);
+  });
+
+  socket.on("icecandidate", icecandidate => {
+    console.log(`✅ I got icecandidate`);
+    pc.addIceCandidate(icecandidate);
+  });
+}
+
+async function init() {
+  net = await posenet.load();
+  console.log("MODEL LOADING DONE");
+  socketSetting();
+
   if (navigator.mediaDevices) {
     showUserPlatform();
     showEnumerateDeivces();
     showSupportedConstraints();
+
+    localVideo.addEventListener("loadeddata", tracking);
+    remoteVideo.addEventListener("loadeddata", tracking);
+
+    remoteVideo.src = "/sample.mp4";
+    remoteVideo.load();
 
     resoultionList.addEventListener("change", getMedia);
 
@@ -259,10 +310,6 @@ init();
 /*
 Try calling localStream.getVideoTracks()[0].stop().
 
-For SCTP, reliable and ordered delivery is true by default.
-Notice the use of dataConstraint. Data channels can be configured to enable different types of data sharing — for example, prioritizing reliable delivery over performance.
-With SCTP, the protocol used by WebRTC data channels, reliable and ordered data delivery is on by default. When might RTCDataChannel need to provide reliable delivery of data, and when might performance be more important — even if that means losing some data?
-
 In order to set up and maintain a WebRTC call, WebRTC clients (peers) need to exchange metadata:
 
 Candidate (network) information.
@@ -271,5 +318,14 @@ In other words, an exchange of metadata is required before peer-to-peer streamin
 
 What alternative messaging mechanisms might be possible? What problems might you encounter using 'pure' WebSocket?
 What issues might be involved with scaling this application? Can you develop a method for testing thousands or millions of simultaneous room requests?
+*/
+
+/*
+
+DataChannel
+
+For SCTP, reliable and ordered delivery is true by default.
+Notice the use of dataConstraint. Data channels can be configured to enable different types of data sharing — for example, prioritizing reliable delivery over performance.
+With SCTP, the protocol used by WebRTC data channels, reliable and ordered data delivery is on by default. When might RTCDataChannel need to provide reliable delivery of data, and when might performance be more important — even if that means losing some data?
 
 */
