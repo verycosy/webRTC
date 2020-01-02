@@ -1,17 +1,16 @@
 const express = require("express"),
-  https = require("https"),
+  // https = require("https"),
   http = require("http"),
   socketIO = require("socket.io"),
-  fs = require("fs");
+  // fs = require("fs");
 
 const PORT = 5020;
-const option = {
-  key: fs.readFileSync("./keys/server.key"),
-  cert: fs.readFileSync("./keys/server.crt")
-};
+// const option = {
+//   key: fs.readFileSync("./keys/server.key"),
+//   cert: fs.readFileSync("./keys/server.crt")
+// };
 
 const app = express();
-//const server = https.createServer(option, app);
 const server = http.createServer(app);
 const io = socketIO(server);
 

@@ -22,6 +22,12 @@ let net = null;
 let pc = null,
   localStream = null;
 
+const color = "orangered";
+const lineWidth = 4;
+
+const ashiq = new Image();
+ashiq.src = "./portrait_ashiq.jpg";
+
 const pcConfig = [
   {
     iceServers: [{ url: "stun:stun.l.google.com:19302" }]
@@ -48,7 +54,7 @@ const mediaStreamConstraints = {
   fourK: {
     video: { width: { exact: 4096 }, height: { exact: 2160 } }
   }
-}; // ideal, max, min
+}; // ideal, max, min, aspectRatio : { ideal: 1.333 }
 
 function addItem(ul, item) {
   const li = document.createElement("li");
@@ -103,7 +109,6 @@ async function drawFromVideo(video, ctx) {
   const { keypoints } = await net.estimateSinglePose(video, 0.5, true, 16);
 
   ctx.fillStyle = "red";
-  ctx.clearRect(0, 0, video.width, video.height);
 
   keypoints.forEach(({ part, position: { x, y } }) => {
     console.log(`${part} drawing at (${x}, ${y})`);
@@ -114,7 +119,7 @@ async function drawFromVideo(video, ctx) {
   });
 }
 
-function tracking(evt) {
+async function tracking(evt) {
   console.log("Tracking Start");
   const { target: video } = evt;
   const canvas = video.previousElementSibling;
@@ -126,7 +131,20 @@ function tracking(evt) {
   video.width = video.videoWidth;
   video.height = video.videoHeight;
 
-  setInterval(() => drawFromVideo(video, ctx), 100);
+  setInterval(async () => {
+    const { keypoints } = await net.estimateSinglePose(video, 0.5, true, 16);
+    ctx.clearRect(0, 0, video.width, video.height);
+
+    //drawFromVideo(video, ctx);
+    ctx.drawImage(
+      ashiq,
+      keypoints[0].position.x - 50,
+      keypoints[0].position.y - 50,
+      100,
+      100
+    );
+    drawSkeleton(keypoints, 0.5, ctx);
+  }, 100);
 }
 
 async function getMedia() {
@@ -293,8 +311,8 @@ async function init() {
     localVideo.addEventListener("loadeddata", tracking);
     remoteVideo.addEventListener("loadeddata", tracking);
 
-    remoteVideo.src = "/sample.mp4";
-    remoteVideo.load();
+    // remoteVideo.src = "/sample.mp4";
+    // remoteVideo.load();
 
     resoultionList.addEventListener("change", getMedia);
 
@@ -303,6 +321,38 @@ async function init() {
   } else {
     alert("Not Supported Environment");
   }
+}
+
+//
+
+function drawSegment([ay, ax], [by, bx], color, scale, ctx) {
+  ctx.beginPath();
+  ctx.moveTo(ax * scale, ay * scale);
+  ctx.lineTo(bx * scale, by * scale);
+  ctx.lineWidth = 7;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+}
+
+function drawSkeleton(keypoints, minConfidence, ctx, scale = 1) {
+  const adjacentKeyPoints = posenet.getAdjacentKeyPoints(
+    keypoints,
+    minConfidence
+  );
+
+  function toTuple({ y, x }) {
+    return [y, x];
+  }
+
+  adjacentKeyPoints.forEach(keypoints => {
+    drawSegment(
+      toTuple(keypoints[0].position),
+      toTuple(keypoints[1].position),
+      color,
+      scale,
+      ctx
+    );
+  });
 }
 
 init();

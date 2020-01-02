@@ -8,10 +8,14 @@
     <title>Document</title>
   </head>
   <body>
-    <canvas id="localOutput"></canvas>
-    <video id="localVideo" autoplay controls></video>
-    <canvas id="remoteOutput"></canvas>
-    <video id="remoteVideo" autoplay controls></video>
+    <div>
+      <canvas id="localOutput"></canvas>
+      <video id="localVideo" autoplay playsinline muted></video>
+    </div>
+    <div>
+      <canvas id="remoteOutput"></canvas>
+      <video id="remoteVideo" autoplay playsinline></video>
+    </div>
 
     <select id="resolutionList">
       <option value="default">Default Resolution</option>
